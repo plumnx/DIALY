@@ -6,3 +6,109 @@ https://github.com/Netflix/Hystrix
 
 Spring Cloud Circuit Breaker
 https://github.com/spring-cloud/spring-cloud-circuitbreaker
+
+实用技巧：Hystrix传播ThreadLocal对象（两种方案）
+https://zhuanlan.zhihu.com/p/32046755
+https://blog.csdn.net/songhaifengshuaige/article/details/80345012
+https://www.jianshu.com/p/7f2ed9a8efc1
+
+重新定义 Spring Cloud 实战
+1.单独使用断路器
+https://github.com/SpringCloud/spring-cloud-code/tree/master/ch6-1
+2.与Feign联合使用断路器
+https://github.com/SpringCloud/spring-cloud-code/tree/master/ch6-2
+3.Hystrix Dashboard
+4.Hystrix Dashboard && Turbine
+https://github.com/SpringCloud/spring-cloud-code/tree/master/ch6-3
+5.Hystrix 配置
+https://github.com/Netflix/Hystrix/wiki/Configuration
+
+隔离策略，如果不配置，默认为方法名，THREAD
+hystrix.command.default.execution.isolation.strategy
+hystrix.command.HystrixCommandKey.execution.isolation.strategy
+
+配置hystrixCommand命令执行超时时间，以毫秒为单位，1000
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds
+hystrix.command.HystrixCommandKey.execution.isolation.thread.timeoutInMilliseconds
+
+hystrixCommand命令执行是否开启超时，true
+hystrix.command.default.execution.timeout.enabled
+hystrix.command.HystrixCommandKey.execution.timeout.enabled
+
+超时时是否应该中断执行操作，true
+hystrix.command.default.execution.isolation.thread.interruptOnTimeout
+hystrix.command.HystrixCommandKey.execution.isolation.thread.interruptOnTimeout
+
+信号量请求数，当设置为信号量隔离策略时，设置最大允许的请求数，10
+hystrix.command.default.execution.isolation.semaphore.maxConcurrentRequests
+hystrix.command.HystrixCommandKey.execution.isolation.semaphore.maxConcurrentRequests
+
+Circuit Breaker 设置打开 fallback 并启动 fallback 逻辑的错误比率，50
+hystrix.command.default.circuitBreaker.errorThresholdPercentage
+
+强制打开断路器，拒绝所有请求，false
+hystrix.command.default.circuitBreaker.forceOpen
+hystrix.command.HystrixCommandKey.circuitBreaker.forceOpen
+
+当前策略为 THREAD 时，线程池核心大小为，10
+hystrix.threadpool.default.coreSize
+hystrix.threadpool.HystrixThreadPoolKey.coreSize
+
+当前策略为 THREAD 时，线程池核心最大大小为，10
+hystrix.threadpool.default.maximumSize
+hystrix.threadpool.HystrixThreadPoolKey.maximumSize
+
+此属性允许配置maximumSize生效
+hystrix.threadpool.default.allowMaximumSizeToDivergeFromCoreSize
+hystrix.threadpool.HystrixThreadPoolKey.allowMaximumSizeToDivergeFromCoreSize
+
+Hystrix县城调整和计算
+前提：
+	Threadpool 的大小是10
+	计算方法：
+		每秒请求的峰值 * 99% 的延迟百分比（请求响应时间） + 预留缓冲的值
+	例子：
+		30 * 0.2s = 6 + 预留缓冲的值 = 10, 预留 4 个线程数
+	其他：
+		hystrix微服务参数优化设置（实战经验）
+		https://blog.csdn.net/java_zyq/article/details/84956659
+		
+		
+6.Hystrix 请求缓存
+7.Hystrix Request Collapser
+8.Hystrix 线程传递
+https://github.com/SpringCloud/spring-cloud-code/tree/master/ch6-4
+
+
+Hystrix vs Sentinel vs 
+1.Migrating From Hystrix to Sentinel Tutorial
+https://dzone.com/articles/guidelinemigration-from-hystrix-to-sentinel
+
+2.hystrix-vs-sentinel-a-tale-of-two-circuit-breakers
+https://dzone.com/articles/hystrix-vs-sentinel-a-tale-of-two-circuit-breakers
+
+3.Resilience4j and Sentinel: Two Open-Source Alternatives to Netflix Hystrix
+https://dzone.com/articles/resilience4j-and-sentinel-two-open-source-alternat
+
+4.Sentinel 与 Hystrix、resilience4j 的对比
+https://www.cnblogs.com/davidwang456/articles/10136318.html
+
+5.限流熔断技术选型：从Hystrix到Sentinel 
+https://www.sohu.com/a/282806665_268033
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
