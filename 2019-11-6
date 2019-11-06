@@ -1,0 +1,410 @@
+---------------------------------------------------
+--
+-- Postgres 9.6
+-- website:
+--	 http://www.postgres.cn/docs/9.6/index.html
+--
+---------------------------------------------------
+
+
+
+-- 1.initial data
+create table test_a (col1 varchar, col2 character varying, col3 int);
+create table test_b (col1 varchar, col2 character varying, col3 int);
+
+delete from test_a;
+
+insert into test_a values ('A', 'abc', 1);
+insert into test_a values ('B', 'def', 2);
+insert into test_a values ('C', 'ghi', 3);
+
+delete from test_b;
+
+insert into test_b values ('D', 'abc', 4);
+insert into test_b values ('E', 'def', 5);
+insert into test_b values ('F', 'ghi', 6);
+
+-- 2.test base function 1
+DROP FUNCTION sales_tax(subtotal real);
+
+CREATE FUNCTION sales_tax(subtotal real) RETURNS real AS $$
+BEGIN
+    RETURN subtotal * 0.06;
+END;
+$$ LANGUAGE plpgsql;
+
+3.test base function 2
+-- DROP FUNCTION instr(varchar, varchar)
+CREATE FUNCTION instr(varchar, varchar) RETURNS varchar AS $$
+DECLARE
+    v_string1 ALIAS FOR $1;
+    v_string2 ALIAS FOR $2;
+BEGIN
+    RETURN v_string1 || ' - ' || v_string2;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 3.test base function 3
+DROP FUNCTION sales_tax(subtotal real, OUT tax real);
+
+CREATE FUNCTION sales_tax(subtotal real, OUT tax real) AS $$
+BEGIN
+    tax := subtotal * 0.06;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4.test base function 4
+DROP FUNCTION sum_n_product(x int, y int, OUT sum int, OUT prod int);
+
+CREATE FUNCTION sum_n_product(x int, y int, OUT sum int, OUT prod int) AS $$
+BEGIN
+    sum := x + y;
+    prod := x * y;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 5.test base function 5
+DROP FUNCTION extended_sales(p_itemno varchar);
+
+CREATE FUNCTION extended_sales(p_itemno varchar)
+RETURNS TABLE(quantity varchar, total int) AS $$
+BEGIN
+    RETURN QUERY SELECT s.col1, s.col3 * s.col3 FROM test_a AS s
+                 WHERE s.col2 = p_itemno;
+END;
+$$ LANGUAGE plpgsql;
+
+select * from extended_sales('def');
+
+-- 6.base function 6
+DROP FUNCTION add_three_values(v1 anyelement, v2 anyelement, v3 anyelement)
+
+CREATE FUNCTION add_three_values(v1 anyelement, v2 anyelement, v3 anyelement)
+RETURNS anyelement AS $$
+DECLARE
+    result ALIAS FOR $0;
+BEGIN
+    result := v1 + v2 + v3;
+    RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+select * from add_three_values(1, 2, 3);
+
+-- 7.base function 7
+DROP FUNCTION add_three_values(v1 anyelement, v2 anyelement, v3 anyelement, OUT sum anyelement)
+
+CREATE FUNCTION add_three_values(v1 anyelement, v2 anyelement, v3 anyelement, OUT sum anyelement)
+AS $$
+BEGIN
+    sum := v1 + v2 + v3;
+END;
+$$ LANGUAGE plpgsql;
+
+select * from add_three_values(1, 2, 3);
+
+-- 8.复制类型
+variable%TYPE
+user_id users.user_id%TYPE;
+
+-- 9.复制行类型
+DROP FUNCTION merge_fields(t_row test_a);
+
+CREATE FUNCTION merge_fields(t_row test_a) RETURNS text AS $$
+DECLARE
+    t2_row test_b%ROWTYPE;
+BEGIN
+    SELECT * INTO t2_row FROM test_b WHERE test_b.col2 = t_row.col2 ;
+    RETURN t_row.col1 || t2_row.col1 || t_row.col2 || t2_row.col2;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT merge_fields(t.*) FROM test_a t WHERE t.col2 = 'abc' ;
+
+-- 10.复制行类型 2
+DROP FUNCTION show_data(t_row test_a);
+
+CREATE FUNCTION show_data(t_row test_a) RETURNS text AS $$
+DECLARE
+    t2_row test_b%ROWTYPE;
+BEGIN
+    SELECT * INTO t2_row FROM test_b WHERE test_b.col2 = t_row.col2 ;
+    RETURN t2_row;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT show_data(t.*) from test_a t ;
+
+-- 11.循环并返回结果 1
+DROP FUNCTION get_all_test_a();
+
+CREATE OR REPLACE FUNCTION get_all_test_a() RETURNS SETOF test_a AS
+$BODY$
+DECLARE
+    test_a_row test_a%rowtype;
+BEGIN
+    FOR test_a_row IN
+        SELECT * FROM test_a
+			LOOP
+				-- 这里可以做一些处理
+				RETURN NEXT test_a_row; -- 返回 SELECT 的当前行
+			END LOOP;
+    RETURN;
+END
+$BODY$
+LANGUAGE plpgsql;
+
+SELECT * FROM get_all_test_a();
+
+-- 12.循环并返回结果 2
+DROP FUNCTION get_all_test_a();
+
+CREATE FUNCTION get_all_test_a() RETURNS SETOF test_a AS
+$BODY$
+BEGIN
+    RETURN QUERY SELECT * FROM test_a;
+    -- 因为执行还未结束，我们可以检查是否有行被返回
+    -- 如果没有就抛出异常。
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No flight at %.', $1;
+    END IF;
+    RETURN;
+ END
+$BODY$
+LANGUAGE plpgsql;
+
+SELECT * FROM get_all_test_a();
+
+-- 12.循环并返回结果 3
+DROP FUNCTION get_all_test_a();
+
+CREATE FUNCTION get_all_test_a() RETURNS SETOF test_a AS
+$BODY$
+BEGIN
+	DROP TABLE IF EXISTS tmp_1;
+	CREATE TEMPORARY TABLE tmp_1(col1 VARCHAR, col2 CHARACTER VARYING, col3 INT);
+	
+	insert into tmp_1 select * from test_a;
+	insert into tmp_1 select * from test_b;
+	
+  RETURN QUERY select * from tmp_1;
+ END
+$BODY$
+LANGUAGE plpgsql;
+
+SELECT * FROM get_all_test_a();
+
+-- 13.分支条件判断 IF
+IF boolean-expression THEN
+    statements
+END IF;
+
+IF boolean-expression THEN
+    statements
+ELSE
+    statements
+END IF;
+
+IF boolean-expression THEN
+    statements
+[ ELSIF boolean-expression THEN
+    statements
+[ ELSIF boolean-expression THEN
+    statements
+    ...]]
+[ ELSE
+    statements ]
+END IF;
+
+-- 14.分支条件判断 CASE
+CASE search-expression
+    WHEN expression [, expression [ ... ]] THEN
+      statements
+  [ WHEN expression [, expression [ ... ]] THEN
+      statements
+    ... ]
+  [ ELSE
+      statements ]
+END CASE;
+
+CASE x
+    WHEN 1, 2 THEN
+        msg := 'one or two';
+    ELSE
+        msg := 'other value than one or two';
+END CASE;
+
+-- 15.循环
+[ <<label>> ]
+LOOP
+    statements
+END LOOP [ label ];
+
+-- 16.EXIT
+EXIT [ label ] [ WHEN boolean-expression ];
+
+-- 17.整合
+LOOP
+    -- 一些计算
+    IF count > 0 THEN
+        EXIT;  -- 退出循环
+    END IF;
+END LOOP;
+
+LOOP
+    -- 一些计算
+    EXIT WHEN count > 0;  -- 和前一个例子相同的结果
+END LOOP;
+
+<<ablock>>
+BEGIN
+    -- 一些计算
+    IF stocks > 100000 THEN
+        EXIT ablock;  -- 导致从 BEGIN 块中退出
+    END IF;
+    -- 当stocks > 100000时，这里的计算将被跳过
+END;
+
+-- 18.CONTINUE
+CONTINUE [ label ] [ WHEN boolean-expression ];
+
+LOOP
+    -- 一些计算
+    EXIT WHEN count > 100;
+    CONTINUE WHEN count < 50;
+    -- 一些用于 count IN [50 .. 100] 的计算
+END LOOP;
+
+-- 19.WHILE
+[ <<label>> ]
+WHILE boolean-expression LOOP
+    statements
+END LOOP [ label ];
+
+WHILE amount_owed > 0 AND gift_certificate_balance > 0 LOOP
+    -- 这里是一些计算
+END LOOP;
+
+WHILE NOT done LOOP
+    -- 这里是一些计算
+END LOOP;
+
+-- 20.FOR 整体变形
+[ <<label>> ]
+FOR name IN [ REVERSE ] expression .. expression [ BY expression ] LOOP
+    statements
+END LOOP [ label ];
+
+-- 例子：
+FOR i IN 1..10 LOOP
+    -- 我在循环中将取值 1,2,3,4,5,6,7,8,9,10 
+END LOOP;
+
+FOR i IN REVERSE 10..1 LOOP
+    -- 我在循环中将取值 10,9,8,7,6,5,4,3,2,1 
+END LOOP;
+
+FOR i IN REVERSE 10..1 BY 2 LOOP
+    -- 我在循环中将取值 10,8,6,4,2 
+END LOOP;
+
+-- 21.通过查询结果循环
+DROP FUNCTION show_data2();
+
+CREATE FUNCTION show_data2() RETURNS SETOF test_a AS
+$BODY$
+DECLARE
+    test_b_row test_b%rowtype;
+    test_a_row test_a%rowtype;
+BEGIN
+    RAISE NOTICE 'Refreshing materialized views...';
+
+    FOR test_a_row IN SELECT * FROM test_a ORDER BY test_a.col1 LOOP
+		select * into test_b_row from test_b where test_b.col2 = test_a_row.col2;
+		return next test_b_row;
+    END LOOP;
+
+    RAISE NOTICE 'Done refreshing materialized views.';
+END $BODY$
+LANGUAGE plpgsql;
+
+select * from show_data2();
+
+-- 22.通过数组循环
+DROP FUNCTION scan_rows(int[]);
+
+CREATE FUNCTION scan_rows(int[]) RETURNS void AS $$
+DECLARE
+  x int[];
+BEGIN
+  FOREACH x SLICE 1 IN ARRAY $1
+  LOOP
+    RAISE NOTICE 'row = %', x;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT scan_rows(ARRAY[[1,2,3],[4,5,6],[7,8,9],[10,11,12]]);
+
+-- 23.CURSOR 游标
+
+-- a.声明游标
+name [ [ NO ] SCROLL ] CURSOR [ ( arguments ) ] FOR query;
+
+DECLARE
+    curs1 refcursor;
+    curs2 CURSOR FOR SELECT * FROM tenk1;
+    curs3 CURSOR (key integer) FOR SELECT * FROM tenk1 WHERE unique1 = key;
+
+-- b.打开游标(查询)
+OPEN unbound_cursorvar [ [ NO ] SCROLL ] FOR query;
+
+OPEN curs1 FOR SELECT * FROM foo WHERE key = mykey;
+
+-- c.打开游标（执行操作）
+OPEN unbound_cursorvar [ [ NO ] SCROLL ] FOR EXECUTE query_string [ USING expression [, ... ] ];
+									 
+OPEN curs1 FOR EXECUTE format('SELECT * FROM %I WHERE col1 = $1',tabname) USING keyvalue;
+
+-- d.打开一个已绑定的游标
+OPEN bound_cursorvar [ ( [ argument_name := ] argument_value [, ...] ) ];
+
+DECLARE
+    key integer;
+    curs4 CURSOR FOR SELECT * FROM tenk1 WHERE unique1 = key;
+BEGIN
+    key := 42;
+    OPEN curs4;
+
+-- e.使用游标 FETCH
+FETCH [ direction { FROM | IN } ] cursor INTO target;
+
+FETCH curs1 INTO rowvar;
+FETCH curs2 INTO foo, bar, baz;
+FETCH LAST FROM curs3 INTO x, y;
+FETCH RELATIVE -2 FROM curs4 INTO x;
+
+-- f.使用游标 MOVE
+MOVE [ direction { FROM | IN } ] cursor;
+
+MOVE curs1;
+MOVE LAST FROM curs3;
+MOVE RELATIVE -2 FROM curs4;
+MOVE FORWARD 2 FROM curs4;
+
+-- g.使用游标 UPDATE/DELETE WHERE CURRENT OF
+UPDATE table SET ... WHERE CURRENT OF cursor;
+DELETE FROM table WHERE CURRENT OF cursor;
+
+UPDATE foo SET dataval = myval WHERE CURRENT OF curs1;
+
+-- h.CLOSE
+CLOSE cursor;
+
+CLOSE curs1;
+
+-- g.LOOP CURSOR
+[ <<label>> ]
+FOR recordvar IN bound_cursorvar [ ( [ argument_name := ] argument_value [, ...] ) ] LOOP
+    statements
+END LOOP [ label ];
