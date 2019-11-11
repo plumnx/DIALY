@@ -1,1 +1,10 @@
-https://github.com/sczyh30/coscon-18-sentinel-workshop
+resources:
+  https://github.com/sczyh30/coscon-18-sentinel-workshop
+
+idea:
+  run:
+    vm-options: -Dcsp.sentinel.dashboard.server=localhost:8080 -Dproject.name=sentinel-dashboard
+    
+cmd:
+  run:
+    java -Dserver.port=8080 -Dcsp.sentinel.dashboard.server=localhost:8080 -Dproject.name=sentinel-dashboard -jar sentinel-dashboard.jar
