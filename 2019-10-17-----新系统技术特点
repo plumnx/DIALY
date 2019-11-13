@@ -1,0 +1,63 @@
+2019-10-17-----新系统技术特点
+
+1.分布式事物
+	1.一般使用基于 MQ 的 SAGA （2PC 有性能问题）
+	2.SAGA 有两种模式，区别在于是否将分布式事物以及异常补偿的编排过程独立出来，需要考虑业务复杂度以及独立出来的ProcessManager的单点问题。
+	3.开源分布式事物框架，Seata（Alibaba）、 ByteTCC、 LCN
+
+2.DB分布式
+	1.首先基于业务划分微服务， 根据实际情况为服务制定DB部署策略。为保证高可用，主从、互为主从都可以。
+	2.关于跨库、跨服务生成报表数据：
+		1.根据实际情况， 可以为报表服务授权同一实例下不同 schema 的表或视图， 以生成报表数据。
+		（这个过程中需要处理涉及到的project的entity， 有可能需要拆分 project 形成多个 maven module， 以便报表工程可以引用到）
+		2.考虑一些数据库的特性， 通过DBLink的方式可以处理跨数据库实例的数据引用。
+		3.考虑后台数据拼接
+	3.关于读写分离、分库、分表的后台逻辑层， 可以使用 sharding-jdbc，支持主流数据库， 可以满足以上要求下实现基本的SQL查询， 目前对Mysql版本提供了中间件。
+	https://shardingsphere.apache.org/document/current/en/manual/sharding-jdbc/
+	
+3.维护性
+	1.规则引擎， drools, 需要形成详细的业务规则说明作为输入
+	2.除规则引擎外， 也可考虑通过 Groovy、 Scala （Java 脚本引擎动态调用）对一些场景进行动态调整， 添加、修改执行业务逻辑或策略。
+
+4.容器化
+	1.Kubernetes 容器化， 市场上已存在很多相关的 DevOps 流程。
+	之前使用的 DevOps 流程： 
+		Jenkins(定时 / Git Hook) -> Project Package(Maven Docker Plugin) -> Junit test -> Integration Test -> Helm -> Kubernetes
+		使用 Jenkins 结合 Python 脚本，可以考虑实现系统服务版本的自动/手动升级部署。（工程需要按照 Git-FLow 的流程进行版本化管理）
+
+5.开发效率和标准统一
+	1.开发环境集成 SonarQube， 检查代码质量
+	2.单元测试、集成测试
+	3.微服务的Kubernetes编排， 以及编排版本的版本管理
+
+6.对技术框架的弱依赖性
+	1.开发过程中可以尽量选用生命周期较长的主流开发框架和插件。使用主流框架， 定期升级版本， 也会解决一些随着时间不断出现的信息安全问题。
+
+7.安全性
+	1.认证
+		Spring Security OAuth2 + JWT
+	2.防护
+		Spring Security， 集成配置后可支持预防 CSS、 CSRF 等恶意攻击。
+
+8.稳定性
+	1.Kubernetes 的自动扩展等特性， 通过 LivenessProbe、 ReadnessProbe 对微服务本身状态进行监控， 重启异常服务。
+	2.Heapster 等插件， 对 Kubernetes 的 Node 以及 Pod 进行监控。
+	3.Spring Cloud Actuator 等健康状态检查
+	4.Spring Cloud Eureka（Consule）、 Kubernetes Service 时， 发生宕机、 服务不可用时的请求重试、 服务切换的策略以及时机。
+
+9.数据交换协议对比
+	To Comapre HTTP、 MQ、 File				HTTP							MQ							File
+	Synchronous Call						Yes								Not RECOMMENDED				No
+	Processes at a fixed rate				No								Yes							Yes
+	Long-lived processes					Yes, Need Both Configuration	Yes 						Yes
+	Loose Coupling							Yes								Yes							Yes
+	Request Prior							No								Yes 						No										
+	Fault Tolerance							No， Need Implement				Yes							No
+	Assured Delivery						No								Yes							No
+	Message Partition						No								Yes 						Yes
+	Transfer Large Data Volume				Not RECOMMENDED					Not RECOMMENDED				RECOMMENDED
+	Fit For Big Volume Per Request			No								No							Yes
+	
+	Note： 
+	1.关于传输较大数据量的方案也可考虑使用 Amazon 的 S3 协议。目前主流有 OpenStack 的 Swift 以及开源的 Minio。可以避免大文件在不同服务间的流转， 避免浪费带宽和处理时间。
+
