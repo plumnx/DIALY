@@ -1,0 +1,172 @@
+2019-10-21-----技术调查_容器化
+
+15:52
+1.容器化技术 Containerization
+	1.选型：
+		Docker （83%）
+		# CoreOS rkt （12%）
+		# Mesos (4%)	
+	2.对比：
+		1.Containerization
+		2.Non-Containerization		
+
+2.容器编排 Container Orchestration Enginers (COEs)
+	1.选型
+		Kubernetes
+		Mesos && Marathon
+	2.对比
+		1.Supported Workload:，支持的工作负载类型
+			Mesos：支持容器化、非容器化的工作负载单元
+			Kubernetes：仅支持容器化工作负载单元，包括支持 Docker、rkt等容器技术
+		2.Support for Scalability:，扩展性
+			1.自动扩展
+				Mesos： 支持
+				Kubernetes：支持
+			2.手动扩展
+				Mesos： 支持
+				Kubernetes：支持
+		3.Handling High Availability，高可用
+				Mesos： 支持
+				Kubernetes：支持
+		4.Service Discovery and Load Balancing，服务发现与负载均衡
+				Mesos： 支持
+				Kubernetes：支持
+		5.Performing Upgrade and Rollback，升级与回滚
+				Mesos： 支持
+				Kubernetes：支持
+		6.Loggin and Monitoring，日志与监控
+				Mesos： 支持
+				Kubernetes：支持
+		7.Storage，存储
+		8.Networking，网络
+
+	引用：
+	1.Kubernetes vs Mesos + Marathon
+	https://platform9.com/blog/kubernetes-vs-mesos-marathon/
+	2.kubernetes 对比 mesos + marathon
+	https://www.jianshu.com/p/c734a3fe205b
+	3.Why We Chose Kubernetes Over Mesos (DC/OS)
+	https://logz.io/blog/kubernetes-vs-mesos/
+	4.Mesos vs. Kubernetes
+	https://www.baeldung.com/mesos-kubernetes-comparison
+	5.Kubernetes vs Mesos vs Swarm
+	https://www.sumologic.com/insight/kubernetes-vs-mesos-vs-swarm/
+	6.Mesos+Marathon对比Kubernetes
+	https://blog.csdn.net/WaltonWang/article/details/54341244	
+	7.Docker、Kubernetes 和 Apache Mesos 对比中的一些误区
+	https://linux.cn/article-8751-1.html?pr
+		
+3.镜像仓库
+	Harbor 
+	Docker registry
+	
+Tidy It：
+
+	Containerization			
+对比项	条目	Docker	Core rkt
+简述		• 提供日志、镜像、管理，目前已发展成为一个平台	• 作为引擎的一个独立组件，在Linux系统上运行应用容器的功能组件
+常用功能			
+	镜像获取	• 支持	• 支持
+	镜像推送	• 支持	• 不支持
+	镜像提交	• 支持	• 支持
+	日志查看	• 支持	• 不支持
+	容器运行	• 支持	• 支持
+	容器启停	• 支持	• 支持
+	集群管理	• 支持，需 COE 集群系统支持	• 支持
+容器安全			
+	"镜像安全
+（镜像签名）"	• 支持	• 支持
+	"系统安全
+（Linux系统安全策略）"	• 支持，Namespace隔离性， Cgroups配额资源限制， Capability权限划分，SELinux/AppArmor访问控制权限。	• 支持，Namespace隔离性， Cgroups配额资源限制，Capability权限划分，SELinux/AppArmor，TPM（Trusted Platform Module）
+	"运行时安全
+（容器隔离）"	由其他方案和厂家提供	"• 支持，KVM虚拟机中运行pod时，基于OS内核级和hypervisor级的隔离，
+非容器宿主机的cgroups和namespace隔离"
+兼容性			
+	镜像兼容型 	• Docker	"• Docker
+• OCI"
+	基本运行单元 	基本支持单元为容器 	基本执行单位为pod，支持kubernetes， Nomad
+	标准和规范 	• 支持CNI	"• 支持CNI
+• 支持AppC"
+总结			
+	市场占有（2018）	• 83%	• 4%
+	社区活跃度	Docker 在 GitHub 社区的贡献者数量和提交次数比 rkt 要多很多。	
+	总结	相对于 Core rkt，Docker 支持的操作系统种类更多，版本成熟。围绕 docker 的相关生态环境也更加完善，是一个相对好的选择。	
+
+Container Orchestration Engine (COE)		
+对比项	Kubernetes	Mesos + Marathon
+简述	"• 开源系统
+• 自动化部署实施
+• 手动/自动扩展容器化应用"	"• 分布式系统内核
+• 服务器资源（CPU、Memory、Network、Disk...）管理、调度
+• 对各类型分布式处理环境提供支持"
+特性	"• 自动化装箱
+• 水平扩展
+• 自动退出回滚
+• 存储架构体系，支持多种存储协议
+• 自我修复，自动定位、重启、复制、扩容、缩容
+• 服务发现和负载均衡
+• 加密和配置管理
+• 批处理"	"• 水平扩展能力很强，可以支持最多10,000个节点
+• 基于 Zookeeper，提供支持容错的 master 和 slave 集群节点
+• 支持 Docker 容器
+• 支持非容器化分布式程序、Spark e.g.
+• 多种资源调度(CPU、Memeory、Disk、Ports）
+• 支持基于各类语言（Java、Python、C++APIs）等开发的高并发分布式应用
+• 实时监控集群状态的 Web UI"
+架构	"Master
+• etcd
+• kube-scheduler
+• kube-apiserver
+• kube-controller-manager
+
+Slave
+• kubelet
+• kube-proxy
+"	"Master
+• mesos-master
+• Zookeeper for HA
+
+Slave
+• mesos-slave
+
+Framework(e.g. Using Marathon to Support Containerization)
+• Scheduler
+• Executor
+• Zookeeper for HA"
+"数据模型 / 业务组件
+（主要）"	"• Pod
+• Deployment
+• Service"	"• Framework
+• Agent
+• task"
+支持负载单元	"• 容器化工作单元，支持 Docker、rkt
+（专业的容器化编排引擎）"	"• 容器化工作单元，支持 Docker
+• 非容器化工作单元
+（通过 Marathon Framework 来支持容器化技术）"
+扩展能力	"• 支持手动扩展容器
+• 支持自动扩展容器"	• 支持通过应用程序定义或者用户输出来扩展应用服务
+高可用	• 支持高可用，可根据服务器资源情况调度	• 支持高可用，可根据服务器资源情况调度
+服务发现与负载均衡	• 支持	• 支持
+升级 / 降级	• 支持	• 支持
+诊断与监控	• 支持，需集成外部组件	• 支持
+存储	• 支持多种持久化数据卷	• 支持本地化数据卷，支持CSI
+网络	• 为每一个 pod 动态分配一个唯一的IP	"支持两种网络模式
+• IP-per-container
+• network-port-mapping"
+使用场景	"• 只适用于容器化部署，提供的容器化支持也比 Mesos 多
+• 相对于 Mesos + Marathon，Kubernetes 在 github 拥有更高的提交量，社区也更活跃"	"• 适合同时存在基于容器化和非容器化的应用部署需求
+• 拥有更高的服务器节点扩展性，Kubernetes 可同时扩展管理 5000 台机器，而 Mesos 可以扩展到 10,000 台机器。（需要考虑现实环境下，是否需要这么多）"
+总结	"对于一个打算使用容器化来开始工作的团队来说，Kubernetes 是一个相对快速创建使用的解决方案，而且他的生态要好于 Mesos。
+如果我们希望同时使用容器化和非容器化的技术来实现分布式应用部署以及持续集成，那么 Mesos是一个相对好的解决方案。"	
+
+Image Registry		
+对比项	Vmware Harbor	Docker Retgsitry
+多租户内容签名及验证	• 支持	• 不支持
+可扩展的API和图形化交互	• 提供 WEB 界面，优化用户体验	• CLI
+认证以及基于角色的访问控制	• 支持	• 支持认证，不支持角色控制
+集群支持	• 支持集群，多实例间的镜像复制	• 不支持
+国际化支持	• 中文和英文	• 不支持
+安全性和漏洞分析	• 支持	• 不支持
+
+	
+	
