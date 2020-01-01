@@ -1,0 +1,74 @@
+
+	数据跳过和过滤原则
+	
+1.跳过数据原则
+	1.通过对比 processor 前后是可以找到规则验证不通过的记录
+	2.通过记录 error 情况，可以找到 runtime 异常引起不通过的记录
+2.流程含有聚集过程
+	1.流程中断重发后（含有聚集阶段）：
+		1.如果发生异常，数据对不上，可以通过在聚集阶段，验证数据量的方式，打断流程
+	2.流程中断重发后（没有聚集阶段）：
+		1.修改文件后，重新跑一遍，但是会造成大量的数据重复
+		2.导出跳过数据，修改后作为数据源重新导入，可以控制数据重发的问题，直到数据全部解决掉
+		3.拷贝个新流程添加过滤阶段，需要业务组自行实现数据重复的过滤规则，可以避免导入导出，来解决数据重发
+
+	Kafka 监听配置规则
+	1.通过并发控制 kafka 消费实例数，只有等同分片数后在执行，否则暂停消费
+	
+	Kafka 同步异步发送
+	https://www.cnblogs.com/zhengna/p/9948709.html
+	//创建配置信息
+	Properties props = new Properties();
+	props.put("bootstrap.servers", "192.168.42.133:9092"); //指定broker的节点和端口
+	props.put("acks", "all");
+	props.put("retries", 0);
+	props.put("batch.size", 16384);
+	props.put("linger.ms", 1);
+	props.put("buffer.memory", 33554432);
+	props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+	props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+	props.put("producer.type", "async");  //sync为同步，async为异步,此配置未生效
+	
+	https://blog.csdn.net/zz_1111/article/details/89844661
+	RecordMetadata recordMetadata = producer.send(new ProducerRecord<String, String>(this.topic, value)).get();
+	
+	https://www.baeldung.com/spring-kafka
+	public void sendMessage(String message) {
+             
+		ListenableFuture<SendResult<String, String>> future = 
+		  kafkaTemplate.send(topicName, message);
+		 
+		future.addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
+	 
+			@Override
+			public void onSuccess(SendResult<String, String> result) {
+				System.out.println("Sent message=[" + message + 
+				  "] with offset=[" + result.getRecordMetadata().offset() + "]");
+			}
+			@Override
+			public void onFailure(Throwable ex) {
+				System.out.println("Unable to send message=["
+				  + message + "] due to : " + ex.getMessage());
+			}
+		});
+	}
+	
+	https://www.cnblogs.com/duanxz/p/9435343.html
+	TaskExecutor---Spring异步线程池的接口类，其实质是java.util.concurrent.Executor
+以下是官方已经实现的全部7个TaskExecuter。Spring宣称对于任何场景，这些TaskExecuter完全够用了:
+
+名字	特点
+SimpleAsyncTaskExecutor	每次请求新开线程，没有最大线程数设置.不是真的线程池，这个类不重用线程，每次调用都会创建一个新的线程。 --【1】
+SyncTaskExecutor	不是异步的线程.同步可以用SyncTaskExecutor，但这个可以说不算一个线程池，因为还在原线程执行。这个类没有实现异步调用，只是一个同步操作。
+ConcurrentTaskExecutor	Executor的适配类，不推荐使用。如果ThreadPoolTaskExecutor不满足要求时，才用考虑使用这个类。
+SimpleThreadPoolTaskExecutor	监听Spring’s lifecycle callbacks，并且可以和Quartz的Component兼容.是Quartz的SimpleThreadPool的类。线程池同时被quartz和非quartz使用，才需要使用此类。
+ThreadPoolTaskExecutor	最常用。要求jdk版本大于等于5。可以在程序而不是xml里修改线程池的配置.其实质是对java.util.concurrent.ThreadPoolExecutor的包装。
+TimerTaskExecutor	 
+WorkManagerTaskExecutor
+	@Bean
+    public TaskExecutor threadPoolTaskExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(10);
+        taskExecutor.setMaxPoolSize(20);
+        return taskExecutor;
+    }
