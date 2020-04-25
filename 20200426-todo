@@ -1,0 +1,44 @@
+1.工作计划：
+开发
+Tasklet 组件开放异常收集
+BoBusinessTasklet 收尾
+测试
+IF 的密码功能测试（测试用例及review）
+Kettle 的详细功能测试（测试用例及review）
+培训
+IF 功能使用培训
+审计
+审计基本设计及review
+审计功能开发划分：
+Sql 解析 vs 对象解析
+对象解析
+类型
+insert 对象
+insert 参数
+insert 多个对象
+insert 多个参数
+insert plus 对象
+update 对象（支持单表、不支持多表级联更新）
+update 参数
+思路
+1.拦截器获取 BoundSql 对象
+2.解析 SQL 提取表名（因为有可能不是对象），多于一个表，放过
+3.根据 BoundParameterMapping 提取 parameterMapping 和 parameterObject 提取主键对象以及值对象
+SQL解析
+拦截器及优先级
+column 属性对比，特殊类型展示（日期）
+表、字段：必须、忽略、审计范围内的统一标识（约定）
+2.待确认：
+          1.记录之间的关联关系，如果不记录当时的关系，事后就很难找回，因为非常有可能关联关系的变化会体现到其他的审阅记录中！
+
+3.注意：
+因为插入参数插入对象调用mybatisplus函数分别对应map数组map和对象，所以需要sql提取表名其余映射处理
+只能处理带主键的不带主键不能定位记录除非两次对比加悲观锁
+普通更新操作必须加乐观锁或悲观锁，否则审阅记录可能对不上当然记录本身也会存在问题
+插件包依赖plus包因为plus对mybatis侵入程度很高导致配置多套所以需要引入plus插件提供自适应，所以引用插件包的工程都会自动引用plus包或者至少保留验证plus属性类到插件工程做自动判断才行的
+Transactional 必须加或者至少带审阅记录的要加，因为要保证保存审阅记录与执行操作在一个事物中
+
+4引用：
+          1.利用 druid 解析器解析SQL
+         https://www.cnblogs.com/digdeep/p/5071204.html
+
