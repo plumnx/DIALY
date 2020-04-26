@@ -1,0 +1,124 @@
+@Slf4j
+@Intercepts({@Signature(
+        type = StatementHandler.class,
+        method = "update",
+        args = {Statement.class})})
+public class UpdateStatementHandlerInterceptor implements Interceptor {
+    @Override
+    public Object intercept(Invocation invocation) throws Throwable {
+        StatementHandler routingStatementHandler = (StatementHandler) invocation.getTarget();
+        BoundSql boundSql = routingStatementHandler.getBoundSql();
+        log.info(new ObjectMapper().writeValueAsString(boundSql));
+        return invocation.proceed();
+    }
+
+    @Override
+    public Object plugin(Object o) {
+        return Plugin.wrap(o, this);
+    }
+
+    @Override
+    public void setProperties(Properties properties) {
+        log.warn(properties.toString());
+    }
+}
+
+--------------------
+
+
+1.
+@Insert("insert into user(id, name, age, email, address) values(#{user.id}, #{user.name}, #{user.age}, #{user.email}, #{user.address})")
+boolean saveObject(@Param("user") User user);
+
+result = {BoundSql@8150} 
+ sql = "insert into user(id, name, age, email, address) values(?, ?, ?, ?, ?)"
+ parameterMappings = {ArrayList@7730}  size = 5
+  0 = {ParameterMapping@8165} "ParameterMapping{property='user.id', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  1 = {ParameterMapping@8166} "ParameterMapping{property='user.name', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  2 = {ParameterMapping@8167} "ParameterMapping{property='user.age', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  3 = {ParameterMapping@8168} "ParameterMapping{property='user.email', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  4 = {ParameterMapping@8169} "ParameterMapping{property='user.address', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+ parameterObject = {MapperMethod$ParamMap@8161}  size = 2
+  "user" -> {User@8180} "User(id=9051709, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+  "param1" -> {User@8180} "User(id=9051709, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+ additionalParameters = {HashMap@8162}  size = 0
+ metaParameters = {MetaObject@8163} 
+========================================
+2.
+@SelectKey(statement = "select user_seq.nextval", keyProperty = "user.id", before = true, resultType = long.class)
+@Insert("insert into user(id, name, age, email, address) values(#{user.id}, #{user.name}, #{user.age}, #{user.email}, #{user.address})")
+int saveNew(@Param("user") User user);
+
+result = {BoundSql@8188} 
+ sql = "insert into user(id, name, age, email, address) values(?, ?, ?, ?, ?)"
+ parameterMappings = {ArrayList@7946}  size = 5
+  0 = {ParameterMapping@8201} "ParameterMapping{property='user.id', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  1 = {ParameterMapping@8202} "ParameterMapping{property='user.name', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  2 = {ParameterMapping@8203} "ParameterMapping{property='user.age', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  3 = {ParameterMapping@8204} "ParameterMapping{property='user.email', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  4 = {ParameterMapping@8205} "ParameterMapping{property='user.address', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+ parameterObject = {MapperMethod$ParamMap@8197}  size = 2
+  "user" -> {User@8215} "User(id=5, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+  "param1" -> {User@8215} "User(id=5, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+ additionalParameters = {HashMap@8198}  size = 0
+ metaParameters = {MetaObject@8199} 
+========================================
+3.
+@Insert("insert into user(id, name, age, email, address) values(#{id}, #{name}, #{age}, #{email}, #{address})")
+boolean saveSplits(@Param("id") Long id, @Param("name") String name, @Param("age") int age, @Param("email") String email, @Param("address") String address);
+
+result = {BoundSql@8226} 
+ sql = "insert into user(id, name, age, email, address) values(?, ?, ?, ?, ?)"
+ parameterMappings = {ArrayList@7970}  size = 5
+  0 = {ParameterMapping@8261} "ParameterMapping{property='id', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  1 = {ParameterMapping@8262} "ParameterMapping{property='name', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  2 = {ParameterMapping@8263} "ParameterMapping{property='age', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  3 = {ParameterMapping@8264} "ParameterMapping{property='email', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  4 = {ParameterMapping@8265} "ParameterMapping{property='address', mode=IN, javaType=class java.lang.Object, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+ parameterObject = {MapperMethod$ParamMap@8235}  size = 10
+  "param5" -> "address -5346144739450824145"
+  "address" -> "address -5346144739450824145"
+  "name" -> "name -5346144739450824145"
+  "id" -> {Long@8253} 8329375
+  "param3" -> {Integer@8255} -1193959466
+  "param4" -> "email -5346144739450824145"
+  "param1" -> {Long@8253} 8329375
+  "age" -> {Integer@8255} -1193959466
+  "email" -> "email -5346144739450824145"
+  "param2" -> "name -5346144739450824145"
+ additionalParameters = {HashMap@8236}  size = 0
+ metaParameters = {MetaObject@8237} 
+========================================
+4.
+userPlusMapper.insert(userPlus); with KeySequence
+
+result = {BoundSql@8276} 
+ sql = "INSERT INTO user  ( id,\nname,\nage,\nemail,\naddress )  VALUES  ( ?,\n?,\n?,\n?,\n? )"
+ parameterMappings = {ArrayList@8286}  size = 5
+  0 = {ParameterMapping@8299} "ParameterMapping{property='id', mode=IN, javaType=class java.lang.Long, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  1 = {ParameterMapping@8300} "ParameterMapping{property='name', mode=IN, javaType=class java.lang.String, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  2 = {ParameterMapping@8301} "ParameterMapping{property='age', mode=IN, javaType=int, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  3 = {ParameterMapping@8302} "ParameterMapping{property='email', mode=IN, javaType=class java.lang.String, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  4 = {ParameterMapping@8303} "ParameterMapping{property='address', mode=IN, javaType=class java.lang.String, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+ parameterObject = {UserPlus@8287} "UserPlus(id=6, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+ additionalParameters = {HashMap@8288}  size = 2
+  "_parameter" -> {UserPlus@8287} "UserPlus(id=6, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+  "_databaseId" -> null
+ metaParameters = {MetaObject@8289} 
+========================================
+5.
+userPlusMapper.insert(userPlus);
+
+result = {BoundSql@8311} 
+ sql = "INSERT INTO user  ( id,\nname,\nage,\nemail,\naddress )  VALUES  ( ?,\n?,\n?,\n?,\n? )"
+ parameterMappings = {ArrayList@8321}  size = 5
+  0 = {ParameterMapping@8332} "ParameterMapping{property='id', mode=IN, javaType=class java.lang.Long, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  1 = {ParameterMapping@8333} "ParameterMapping{property='name', mode=IN, javaType=class java.lang.String, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  2 = {ParameterMapping@8334} "ParameterMapping{property='age', mode=IN, javaType=int, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  3 = {ParameterMapping@8335} "ParameterMapping{property='email', mode=IN, javaType=class java.lang.String, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+  4 = {ParameterMapping@8336} "ParameterMapping{property='address', mode=IN, javaType=class java.lang.String, jdbcType=null, numericScale=null, resultMapId='null', jdbcTypeName='null', expression='null'}"
+ parameterObject = {UserPlus@8322} "UserPlus(id=7, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+ additionalParameters = {HashMap@8323}  size = 2
+  "_parameter" -> {UserPlus@8322} "UserPlus(id=7, name=name -5346144739450824145, age=-1193959466, email=email -5346144739450824145, address=address -5346144739450824145)"
+  "_databaseId" -> null
+ metaParameters = {MetaObject@8324}
