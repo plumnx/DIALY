@@ -1,0 +1,8 @@
+#!/bin/bash
+while [ 1==1 ]
+do
+        filename=$(date '+%Y-%m-%d %H:%M:%S')
+        echo "-------------------------------------------------- $filename"
+        ls -lR ./logs
+        sleep 0.5s
+done
