@@ -1,0 +1,114 @@
+
+Proposition:
+
+1. Database Partition  (OLTP)
+a.拆表（Table Partition）
+	横向拆表，数据量分担到多张子表。
+		物理分片，Postgres 实现，通过条件匹配 Partition 后查询，适用范围广，对业务代码无侵入。
+		逻辑分片，代码或中间件实现（本质是分表），效果略好于物理分片，代码侵入性较强，并且适用场景有限。
+	
+	纵向拆表，冗余部份关键字段，提升了检索性能（变相增加可索引字段），但是如果分片间需要关联使用，则性能严重下降，并且会造成数据冗余。
+
+	横向拆分和纵向拆分，可根据需要业务需要结合使用。
+
+<1. Database Partition  (OLTP).png>
+
+
+
+b.Postgresql Data-Partition，特指横向拆表，分为以下几类：
+	Range Partitioning，范围分片
+	List Partitioning，枚举项分片
+	Hash Partitioning， hash 分片
+
+	下图是一个 Range Partitioning 实例:
+<2. Database Partition  (OLTP).png>
+
+
+
+c.Postgresql 不同版本对 Table Partitioning 支持:
+
+ 对比项	 		Postgres 10			Postgres 11			Postgres 12
+ 分片间移动数据	 	不支持	 			支持	 			支持
+ 默认分片	 	不支持	 			支持	 			支持
+ 分片自动创建索引	 	不支持	 			支持	 			支持
+ 聚集函数优化		分片串行 			分片并行	 			分片并行
+ 数据独占锁（DML）	多片加锁				多片加锁				单片加锁
+ 查询性能	 	匹配 Partition 后查询		Partition Pruning，提升效率	在 11 基础上优化
+
+
+
+2.Data Aggregation (OLAP)
+
+通过分析关系型数据库中的数据结构，使用 IF 进行数据抽取、转换，实时或定时加载至 ES / Slor / BD 等存储设施，充分利用后者的高吞吐量查询性能（模糊匹配、全文检索）以及海量数据存储优势。
+
+（在这个方案里，由 IF 承担 ETL(Data Loader) 的用途，而 ES 同时起到了 Data Mart (Data Manager) 以及 OLAP (Data Query) 的作用）
+
+a.同步方案：Database Cluster -> IF Cluster -> Elastic Search Cluster / Solr Cluster
+
+<3.Data Aggregation (OLAP).jpg>          
+
+b.数据结构：Database (Plain Structure ) -> OLTP Storage (Star Structure / Snowflake Structure )
+（实际同步的数据结构，需要 design case-by-case.）
+
+<4.Data Aggregation (OLAP).jpg>
+
+c.同步时机
+         实时，轻微延迟（秒或者分钟级），同步数据量最大，对硬件资源以及运维要求高
+         定时，按天或时间同步数据，数据延迟高，同步数据量相对小，对硬件资源以及运维要求中等
+         基于规则，例如：仅同步不活跃数据到 OLAP 库，对硬件资源以及运维要求相对小
+
+<5.Data Aggregation (OLAP).jpg>
+
+
+
+3.Comparing OLTP & OLAP 
+
+Parameter		OLTP						OLAP 
+适用场景 		短时大量在线事物处理以及基本数据查询			海量数据查询、复杂查询（全文检索）
+数据来源			由应用系统事物性操作产生				多种数据来源，数据库（多库）、文件系统
+存储限制			单表存储在千万级左右较合适，实际情况需测试		无上限
+数据可用性		实时						可能有延迟，需要基于业务需求进行设计
+数据一致性		OLTP 数据库需要确保数据一致性，ACID			一致性依靠 OLTP 同步，OLAP 很少修改数据
+数据备份			完整备份与增量备份相结合				一般支持副本集，自身具有容灾能力，相比 OLTP ，花费更少精力
+主要指标			高性能事务处理与低延迟，是主要的衡量指标 		处理数据的吞吐量，是主要的衡量指标
+
+<6.Comparing OLTP & OLAP.jpg>
+
+如果单纯使用 OLTP 需要考虑的几个问题：
+	索引，在大数据量的场景下，并不算是一个万金油的解决方案：
+		索引过多，数据事务性操作性能下降（DML）；索引过少，支持的查询场景变少，而在千万级数据量的场景下，全表扫描的执行效率是无法接受的。
+		较常用的 B-tree 索引（广泛适用于数据分布不规则的离散场景），Self-Balance-Tree 层级越深性能越差，而 tree 的层级又与数据量大小正相关。
+	分区，影响分区查询效率取决于几个因素
+		Postgresql 能否根据分片条件快速匹配到特定分片，需要查询条件明确指定。即便 Postgresql 作了 Partition-Pruning 优化，但性能可能还不如逻辑分片。
+		跨分片查询，即使 Postgresql 对这种场景作了优化（并行处理），性能可能还是会差于普通的单表查询，尤其是当你作了聚集操作(Sql Aggregation)的时候。
+
+	分区主要的功能是管理上的方便性，它并不能绝对保证查询性能的提高。根据使用场景，有时候分区会带来性能上的提高，有时候会降低。
+
+	而 OLAP 方案则主要利用他的高效随机读写性能，满足复杂查询、数据展示以及报表等业务需求。
+
+
+
+4.Data-Mart (A subset of Data-Warehouse, You can using both OLTP & OLAP) 
+
+实际上，在绝大多数应用场景下，OLTP 和 OLAP 方案是结合在一起使用的。
+          事务性处理，DML 操作，需要 ACID 保证数据一致性，依赖 OLTP。
+          简单查询，基于索引，使用 OLTP
+          复杂查询，以及需要海量数据查询，跨月、跨年，则需要使用 OLAP。
+
+<7.Data Aggregation (7)-OLAP-DATA-LAYER.jpg>
+
+而像这种，针对特定的业务制作数据聚集方案，并提供相应的数据服务的业务解决方案（OLAP）集合，又叫做 Data-Mart。
+
+区别于 Data-Warehouse， Data-Mart 是从数据仓库中提取出来专门应对特定业务的数据集，实际上属于 Data-Warehouse 的一个子集。
+
+<8.Data Aggregation (7)-Data-Mart.jpg>
+
+最后，总结以上，OLTP 作为事务性处理，产生数据的来源是必不可少的。而 OLAP 则是海量数据查询的良好解决方案之一，尤其是面对大量历史数据的场景下。
+
+	所以真正的可选方案应该是以上这两种：
+
+	OLTP（PG Partition）
+
+        OLTP（PG Partition）+ IF + OLAP (ES Shards | Solr Shards | BD)
+
+
