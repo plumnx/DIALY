@@ -1,0 +1,54 @@
+
+1.Tomcat
+	Server
+		Service
+			Connector
+			Engine
+				VirtualHost
+					Context
+						Wrapper	
+							FilterChain	
+							Servlet
+
+
+
+2.Timeline
+	Connector
+		TaskThread
+		ThreadPoolExecutor
+		NioEndPoint
+		Http11Processor
+		CoyoteAdapter
+	Engine
+		StandardEngineValve
+	VisualHost
+		StandardHostValve
+	Context
+		StandardContextValve
+	Wrapper
+		StandardWrapperValve
+			FilterChain
+				characterEncodingFilter
+				springSecurityFilterChain
+					DelegatingFilterProxy
+						VirtualFilterChain
+							WebAsyncManageIntegrationFilter
+							SecurityContextPersistenceFilter
+							HeaderWriterFilter
+							LogoutFilter
+							CorsFilter
+							TokenFilter
+							RequestCacheAwareFilter
+							SecurityContextHolderAwareRequestFilter
+							AnoymousAuthenticationFilter
+							SessionManagementFilter
+							ExceptionTransalationFilter
+							FilterSecurityInterceptor	/	MethodSecurityInterceptor
+								AccessDecisionManager
+				webStatFilter
+				corsFilter
+				WsFilter
+			Servlet
+				DispatcherServlet
+
+
