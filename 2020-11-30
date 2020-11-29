@@ -1,0 +1,21 @@
+1.分区表维护
+     a.三种类型，值匹配、范围、哈希
+     b.分区键，唯一索引包括主键必须含有分区键，分区键没必要加索引（除非跨分区查询的场景比较多，这种情况需要考虑分区键是否正确）
+     c.分区表新增和删除，移入和分离
+     d.避免直接在主表创建触发器，如果有需要，尽量在子表加入。
+     -e.主表和子表的列与定义尽量一致
+     f. 避免在分区表 insert on conflict 语句执行可能不正确，该语句仅在指定的目标表有效，而不是他的所有子表。
+     g.分区表的索引需要单独创建
+     h.Aggregate Function 对分区表的支持，需要开启特定的参数，但是会延长执行计划的性能分析时间，enable_apartition_aggregate=on (default, is off).
+2.性能相关
+    a.分区消除
+    b.聚集函数的并行处理
+3.性能测试说明
+    a.schema.table & partition.table
+    b.schema.table.join & partition.table.join
+    c.oracle & postgresql
+4.测试结果分析
+    a.plain table query vs partition table query
+         parallel query scan on partition table
+         整理 parallel query scan 不生效的场景
+    b.oracle 与 postgresql 的差距
