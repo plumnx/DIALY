@@ -1,0 +1,18 @@
+source code rule description:
+1. have a notepad to describe the main architecture。
+2. to describe the main features.
+
+source code list:
+1. jvm
+  1.1 openjdk-11
+  1.2 openjdk-16
+2. datasource
+  2.1 Hikari
+  2.2 Druid
+3. spring
+  3.1 spring-boot
+  3.2 spring-framework
+  3.3 spring-cloud
+  3.4 spring-security
+4. web-server
+5. middleware
